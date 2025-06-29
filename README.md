@@ -1,8 +1,8 @@
 # HIV Differential Gene Expression
 # Table of Contents
 - [Background](#Background)
-- [Preprocessing and Cleaning](#Preprocessing and Cleaning)
-- [Differential Expression](#Differential Expression)
+- [Preprocessing and Cleaning](#Preprocessing)
+- [Differential Expression](#DifferentialExpression)
 
 # Background
 Use of microarray data for gene expression analysis is widely used to study changes in biological processes across different disease states. Whole microarrays consists of tens of thousands of probes corresponding to different genes.
@@ -26,7 +26,7 @@ HIV positive samples were further broken down into 30 HIV-1 positive, 7 HIV-2 po
 Enrolled 31 participants in total, including HIV negative individuals as well as persons who tested positive for HIV-1, HIV-2, or both HIV-1 and HIV-2. There 8 participants per group for all status conditions except for the group of people infected with HIV-2, 
 which only included 7 participants.
 
-# Preprocessing and Cleaning
+# Preprocessing
 All data was obtained from GEO utilizing the GEOquery package. Expression arrays and descriptive information for all samples were extracted from both datasets. There were initially 47,231 probes or datapoints for each sample. Control probes were removed, and all probe IDs were matched to the corresponding gene symbol. Median values were used for genes with multiple corresponding probes, which resulted in 21,186 genes. <br/>
 Both datasets had already undergone quantile normalization, they were further log2 transformed then combined using ComBat to minimize batch effects.
 
