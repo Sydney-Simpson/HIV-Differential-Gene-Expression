@@ -1,16 +1,12 @@
----
-title: "Data Analysis"
-output: github_document
-date: "2025-06-17"
-always_allow_html: true
----
+Data Analysis
+================
+2025-06-17
 
-```{r setup, include=TRUE}
+``` r
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warnings = FALSE)
-
 ```
 
-```{r Get data and load packages}
+``` r
 library(dplyr)
 library(gprofiler2)
 library(pheatmap)
@@ -34,7 +30,7 @@ dat <- read.table("Processed_data.txt",  sep = "\t")
 sample_info <- read.table("all_sample_info.txt",  sep = "\t")
 ```
 
-```{r Select which samples will be used in the analysis}
+``` r
 # Filter for samples from negative HIV patients
 negatives <- subset(sample_info, status == "HIV negative")
 
@@ -65,8 +61,7 @@ selected_samples <- selected_sample_info$geo_accession
 selected_data <- dat[,c(selected_samples)]
 ```
 
-```{r Optional- select which samples will be used in the analysis using SQL}
-
+``` r
 # Select only the last pre infection and the first post infection sample taken from each patient in GSE195434
 selected_negs <- sqldf("WITH negatives AS (
                       SELECT * 
@@ -112,14 +107,15 @@ selected_samples <- selected_samples$geo_accession
 
 # SQL does not support dynamic column selection so we use base R to index our columns of interest
 selected_data <- dat[,c(selected_samples)]
-
 ```
 
-```{r get a quick look at the distribution}
+``` r
 boxplot(selected_data)
 ```
 
-```{r Label data by disease state and get mean expression values for each gene per disease state}
+![](Analysis_files/figure-gfm/get%20a%20quick%20look%20at%20the%20distribution-1.png)<!-- -->
+
+``` r
 # Select the status column from the selected sample information
 labels <- dplyr::select(selected_sample_info, status)
 
@@ -140,8 +136,7 @@ mean_values <- labelled_data %>%
   tibble::column_to_rownames(var = "status") # Convert the status column to row names
 ```
 
-```{r Analyze different groups using limma}
-
+``` r
 # Define groups based on disease status
 groups <- factor(
   unique(labelled_data$status))
@@ -173,10 +168,26 @@ fit2 <- eBayes(fit2)
 results <- decideTests(fit2)
 
 summary(results)
+```
+
+    ##        HIV.1.infected-HIV.negative HIV.2.infected-HIV.negative
+    ## Down                             4                           0
+    ## NotSig                       21066                       21186
+    ## Up                             116                           0
+    ##        HIV.1.and.HIV.2.dual.infected-HIV.negative
+    ## Down                                            0
+    ## NotSig                                      21185
+    ## Up                                              1
+
+``` r
 vennDiagram(results,
             cex = c(0.8, 1.0, 1.0),
             names = c("HIV-1 vs HIV negative", "HIV-2 vs HIV negative", "Dual infected vs HIV negative"))
+```
 
+![](Analysis_files/figure-gfm/Analyze%20different%20groups%20using%20limma-1.png)<!-- -->
+
+``` r
 # Get the adjusted p value for each coefficient
 tT_HIV1 <- topTable(fit2, coef =1, adjust="BH", n = Inf)
 tT_HIV2 <- topTable(fit2, coef =2, adjust="BH", n = Inf)
@@ -196,9 +207,7 @@ for (contrast in coi) {
 }
 ```
 
-
-```{r Identify changes in gene expression then match with p values for each infection status}
-
+``` r
 # Transpose data frame of mean values
 t_means <- data.frame(t(mean_values))
 
@@ -280,7 +289,39 @@ for (i in 1:length(datasets)){
   print(plot1)
   print(plot2)
 }
+```
 
+    ## Warning: ggrepel: 6 unlabeled data points (too many overlaps). Consider
+    ## increasing max.overlaps
+
+![](Analysis_files/figure-gfm/Identify%20changes%20in%20gene%20expression%20then%20match%20with%20p%20values%20for%20each%20infection%20status-1.png)<!-- -->
+
+    ## Warning: ggrepel: 6 unlabeled data points (too many overlaps). Consider
+    ## increasing max.overlaps
+
+![](Analysis_files/figure-gfm/Identify%20changes%20in%20gene%20expression%20then%20match%20with%20p%20values%20for%20each%20infection%20status-2.png)<!-- -->
+
+    ## Warning: ggrepel: 20 unlabeled data points (too many overlaps). Consider
+    ## increasing max.overlaps
+
+![](Analysis_files/figure-gfm/Identify%20changes%20in%20gene%20expression%20then%20match%20with%20p%20values%20for%20each%20infection%20status-3.png)<!-- -->
+
+    ## Warning: ggrepel: 17 unlabeled data points (too many overlaps). Consider
+    ## increasing max.overlaps
+
+![](Analysis_files/figure-gfm/Identify%20changes%20in%20gene%20expression%20then%20match%20with%20p%20values%20for%20each%20infection%20status-4.png)<!-- -->
+
+    ## Warning: ggrepel: 12 unlabeled data points (too many overlaps). Consider
+    ## increasing max.overlaps
+
+![](Analysis_files/figure-gfm/Identify%20changes%20in%20gene%20expression%20then%20match%20with%20p%20values%20for%20each%20infection%20status-5.png)<!-- -->
+
+    ## Warning: ggrepel: 17 unlabeled data points (too many overlaps). Consider
+    ## increasing max.overlaps
+
+![](Analysis_files/figure-gfm/Identify%20changes%20in%20gene%20expression%20then%20match%20with%20p%20values%20for%20each%20infection%20status-6.png)<!-- -->
+
+``` r
 # The HIV-2 Infected and Dual Infected conditions only have 1 statistically significant gene in total likely due to low sample numbers. However, the HIV-1 infected samples are very interesting so we'll save those graphs
 
 # Add labels genes with the lowest 20 p values, and most significant changes in expression
@@ -306,8 +347,23 @@ plot2 <- ggplot(data = HIV1, mapping = aes(x = Change, y = -log10(pvalue), label
   geom_text_repel(col="black")
     
 print(plot1)
-print(plot2)
+```
 
+    ## Warning: ggrepel: 9 unlabeled data points (too many overlaps). Consider
+    ## increasing max.overlaps
+
+![](Analysis_files/figure-gfm/Identify%20changes%20in%20gene%20expression%20then%20match%20with%20p%20values%20for%20each%20infection%20status-7.png)<!-- -->
+
+``` r
+print(plot2)
+```
+
+    ## Warning: ggrepel: 11 unlabeled data points (too many overlaps). Consider
+    ## increasing max.overlaps
+
+![](Analysis_files/figure-gfm/Identify%20changes%20in%20gene%20expression%20then%20match%20with%20p%20values%20for%20each%20infection%20status-8.png)<!-- -->
+
+``` r
 # There was only one gene that had statistically significant differential expression for dual infection
 dual$gene <- rownames(dual)
 dual <- dual %>%
@@ -333,11 +389,11 @@ TMEM_plot <- ggplot(TMEM_data ,aes(x = status, y = TMEM119, group = status, fill
   labs(y = "TMEM119 log2 expression", x = NULL)
 
 TMEM_plot
-
 ```
 
-```{r create heatmaps and narrow down genes list}
+![](Analysis_files/figure-gfm/Identify%20changes%20in%20gene%20expression%20then%20match%20with%20p%20values%20for%20each%20infection%20status-9.png)<!-- -->
 
+``` r
 # Filter genes based on statistical significance
 sig_genes <- rownames(subset(adjusted_p_values,
               HIV.1.infected <= 0.05 | HIV.2.infected <= 0.05 | HIV.1.and.HIV.2.dual.infected <= 0.05))
@@ -358,6 +414,11 @@ selected_genes <- selected_data[unique_genes,]
 
 # Look at distribution of data in selected dataset
 boxplot(selected_genes)
+```
+
+![](Analysis_files/figure-gfm/create%20heatmaps%20and%20narrow%20down%20genes%20list-1.png)<!-- -->
+
+``` r
 # Get relevant information for each sample
 sample_groups <- dplyr::select(selected_sample_info, geo_accession, status, dataset) %>%
   tibble::column_to_rownames(var = "geo_accession")
@@ -393,13 +454,38 @@ for (col in columns) {
   #outlying_samples <- dat$outlier[!is.na(dat$outlier)]
   outliers <- c(outliers, dat$outlier[!is.na(dat$outlier)])
 }
+```
 
+    ## Warning: Using an external vector in selections was deprecated in tidyselect 1.1.0.
+    ## ℹ Please use `all_of()` or `any_of()` instead.
+    ##   # Was:
+    ##   data %>% select(col)
+    ## 
+    ##   # Now:
+    ##   data %>% select(all_of(col))
+    ## 
+    ## See <https://tidyselect.r-lib.org/reference/faq-external-vector.html>.
+    ## This warning is displayed once every 8 hours.
+    ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+    ## generated.
+
+``` r
 # Create a table to view how many times each sample was an outlier
 outlier_table <- rev(stack(table(unlist(outliers)))) %>%
   arrange(desc(values))
 
 print(head(outlier_table))
+```
 
+    ##          ind values
+    ## 1 GSM6038882     76
+    ## 2 GSM6038877     42
+    ## 3 GSM5836724     32
+    ## 4 GSM5836696     22
+    ## 5 GSM5836653     16
+    ## 6 GSM6038895     16
+
+``` r
 # Select samples to remove, here we are removing any where 40 or more genes out of our 225 genes of interest were outliers
 samples_to_rm <- droplevels(outlier_table$ind[which(outlier_table$values >= 40)])
 
@@ -408,14 +494,16 @@ col_vector <- rep("lightgray", length(colnames(selected_genes)))
 col_vector[which(colnames(selected_genes) %in% samples_to_rm)] <- "red"
   
 boxplot(selected_genes, col = col_vector)
-
-selected_genes <- selected_genes[,!(colnames(selected_genes) %in% samples_to_rm)]
-sample_groups <- sample_groups[!(row.names(sample_groups) %in% samples_to_rm),]
-
 ```
 
-``` {r create heat maps }
+![](Analysis_files/figure-gfm/create%20heatmaps%20and%20narrow%20down%20genes%20list-2.png)<!-- -->
 
+``` r
+selected_genes <- selected_genes[,!(colnames(selected_genes) %in% samples_to_rm)]
+sample_groups <- sample_groups[!(row.names(sample_groups) %in% samples_to_rm),]
+```
+
+``` r
 # Specify colors for heatmap
 my_colors <- list(
   status = c("HIV-1 infected" = "red", "HIV negative" = "green4", "HIV-1 and HIV-2 dual infected" = "purple", "HIV-2 infected" = "blue"),
@@ -432,7 +520,11 @@ corMat <- pheatmap(corMat,
                    main = "Correlation Between Samples")
 
 print(corMat)
+```
 
+![](Analysis_files/figure-gfm/create%20heat%20maps-1.png)<!-- -->
+
+``` r
 # Now look at genes of interest, remove the dataset information from the annotation
 sample_groups <- sample_groups[, !(names(sample_groups) %in%  c("dataset")), drop = FALSE]
 
@@ -446,8 +538,11 @@ all_genes <- pheatmap(selected_genes_diff,
                       show_colnames = FALSE,
                       main = "Heatmap of Selected Genes")
 print(all_genes)
+```
 
- 
+![](Analysis_files/figure-gfm/create%20heat%20maps-2.png)<!-- -->
+
+``` r
 # What if we limit this to the top 10 genes?
 top10 <- topTable(fit2, adjust = "BH")
 top10_data <- selected_genes_diff[rownames(top10),]
@@ -460,7 +555,11 @@ top10_p <- pheatmap(top10_data,
                     main = "10 most statistically significant genes")
 
 print(top10_p)
+```
 
+![](Analysis_files/figure-gfm/create%20heat%20maps-3.png)<!-- -->
+
+``` r
 # What if we limit this to the top 10 genes in regard to fold change?
 # Make a new dataframe that shows the max absolute fold change
 change$gene <- row.names(change)
@@ -473,7 +572,11 @@ change <- change %>%
 
 change <- change[order(-abs(change$FC)),]
 row.names(change) <- change$gene
+```
 
+    ## Warning: Setting row names on a tibble is deprecated.
+
+``` r
 top10_changed_genes <- change[1:10,]
 top10_diff <- selected_genes_diff[top10_changed_genes$gene,]
 
@@ -484,7 +587,11 @@ top10_diff <- pheatmap(top10_diff,
                        main = "Top 10 genes with the highest fold changes")
 
 print(top10_diff)
+```
 
+![](Analysis_files/figure-gfm/create%20heat%20maps-4.png)<!-- -->
+
+``` r
 # Select genes with a fold change > 1 and a statistically significant p value
 genes_list <- list()
 for (i in 1:length(datasets)){
@@ -503,10 +610,10 @@ most_sig <- pheatmap(Sig_Change,
 
 print(most_sig)
 ```
- 
 
-```{r PCA for genes with p value less than or equal to 0.05 and a 1 or greater fold change}
+![](Analysis_files/figure-gfm/create%20heat%20maps-5.png)<!-- -->
 
+``` r
 # Transpose data
 PCA_data <- selected_genes[unlist(genes_list),]
   
@@ -538,7 +645,11 @@ biplot(pca,
        legendPosition = 'right', legendLabSize = 10, legendIconSize = 3.0,
        lab = ""
        )
+```
 
+![](Analysis_files/figure-gfm/PCA%20for%20genes%20with%20p%20value%20less%20than%20or%20equal%20to%200.05%20and%20a%201%20or%20greater%20fold%20change-1.png)<!-- -->
+
+``` r
 # Make a biplot that shows important loading info
 biplot(pca, 
        colby = "status", colkey = c("HIV positive" = "#FC4E07", "HIV negative" = "#00AFBB"),
@@ -547,7 +658,17 @@ biplot(pca,
        legendPosition = 'right', legendLabSize = 10, legendIconSize = 3.0,
        lab = ""
        )
+```
 
+    ## Warning: Removed 3 rows containing missing values or values outside the scale range
+    ## (`geom_segment()`).
+
+    ## Warning: Removed 3 rows containing missing values or values outside the scale range
+    ## (`geom_label_repel()`).
+
+![](Analysis_files/figure-gfm/PCA%20for%20genes%20with%20p%20value%20less%20than%20or%20equal%20to%200.05%20and%20a%201%20or%20greater%20fold%20change-2.png)<!-- -->
+
+``` r
 # Use the elbow method to identify which PCs to keep
 elbow <- findElbowPoint(pca$variance)
 
@@ -562,27 +683,54 @@ screeplot(pca,
   annotate("text", x = 9, y = 80,
   label = "Explains 90% of variance", size = 5
   )
+```
 
+![](Analysis_files/figure-gfm/PCA%20for%20genes%20with%20p%20value%20less%20than%20or%20equal%20to%200.05%20and%20a%201%20or%20greater%20fold%20change-3.png)<!-- -->
+
+``` r
 # plot loadings
 plotloadings(pca, caption = "Top 5% of variables")
+```
 
+    ## Warning: ggrepel: 14 unlabeled data points (too many overlaps). Consider
+    ## increasing max.overlaps
+
+![](Analysis_files/figure-gfm/PCA%20for%20genes%20with%20p%20value%20less%20than%20or%20equal%20to%200.05%20and%20a%201%20or%20greater%20fold%20change-4.png)<!-- -->
+
+``` r
 plotloadings(pca,
   components = getComponents(pca, c(1:3)),
   drawConnectors = TRUE, labSize = 3, caption = "Top 5% of variables")
+```
 
+![](Analysis_files/figure-gfm/PCA%20for%20genes%20with%20p%20value%20less%20than%20or%20equal%20to%200.05%20and%20a%201%20or%20greater%20fold%20change-5.png)<!-- -->
+
+``` r
 plotloadings(pca,
   components = getComponents(pca, c(1)),
   drawConnectors = TRUE, labSize = 3, caption = "Top 5% of variables",
   legendPosition = 'none') + coord_flip()
+```
 
+![](Analysis_files/figure-gfm/PCA%20for%20genes%20with%20p%20value%20less%20than%20or%20equal%20to%200.05%20and%20a%201%20or%20greater%20fold%20change-6.png)<!-- -->
+
+``` r
 plotloadings(pca,
   components = getComponents(pca, c(2)),
   drawConnectors = TRUE, labSize = 3, caption = "Top 5% of variables") + coord_flip()
+```
 
+![](Analysis_files/figure-gfm/PCA%20for%20genes%20with%20p%20value%20less%20than%20or%20equal%20to%200.05%20and%20a%201%20or%20greater%20fold%20change-7.png)<!-- -->
+
+``` r
 plotloadings(pca,
   components = getComponents(pca, c(3)),
   drawConnectors = TRUE, labSize = 3, caption = "Top 5% of variables") + coord_flip()
+```
 
+![](Analysis_files/figure-gfm/PCA%20for%20genes%20with%20p%20value%20less%20than%20or%20equal%20to%200.05%20and%20a%201%20or%20greater%20fold%20change-8.png)<!-- -->
+
+``` r
 # Create a pairs plot
 pairsplot(pca,
           components = getComponents(pca, 1:3),
@@ -592,9 +740,11 @@ pairsplot(pca,
           triangle =  TRUE,
           gridlines.major = FALSE,
           gridlines.minor = FALSE)
-
 ```
-```{r select top genes from PCA and create heatmap}
+
+![](Analysis_files/figure-gfm/PCA%20for%20genes%20with%20p%20value%20less%20than%20or%20equal%20to%200.05%20and%20a%201%20or%20greater%20fold%20change-9.png)<!-- -->
+
+``` r
 # Create a list the genes isolated from PCA
 top <- list("EPSTI1", "IFI44", "IFI44L", "LY6E", "XAF1", "CD52", "EOMES", "GZMH", "IFI27", "HERC5", "IFIT1", "RSAD2", "NKG7")
 
@@ -609,10 +759,11 @@ top_genes <- pheatmap(top_data,
                      main = "Top Genes from PCA")
 
 top_genes
-
 ```
 
-```{r create graphs to show distribution for each gene of interest}
+![](Analysis_files/figure-gfm/select%20top%20genes%20from%20PCA%20and%20create%20heatmap-1.png)<!-- -->
+
+``` r
 # Select these genes from the expression matrix, remember to remove the samples denoted as outliers
 top_exprs <- labelled_data[!(row.names(labelled_data) %in% samples_to_rm),c(unlist(top), "status")]
 # Assuming your data frame is named `df`, and the qualitative column is named `Qualitative`
@@ -655,19 +806,34 @@ for (col in columns) {
   
   print(p)
 }
+```
 
+    ## Warning: `aes_string()` was deprecated in ggplot2 3.0.0.
+    ## ℹ Please use tidy evaluation idioms with `aes()`.
+    ## ℹ See also `vignette("ggplot2-in-packages")` for more information.
+    ## This warning is displayed once every 8 hours.
+    ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+    ## generated.
+
+![](Analysis_files/figure-gfm/create%20graphs%20to%20show%20distribution%20for%20each%20gene%20of%20interest-1.png)<!-- -->![](Analysis_files/figure-gfm/create%20graphs%20to%20show%20distribution%20for%20each%20gene%20of%20interest-2.png)<!-- -->![](Analysis_files/figure-gfm/create%20graphs%20to%20show%20distribution%20for%20each%20gene%20of%20interest-3.png)<!-- -->![](Analysis_files/figure-gfm/create%20graphs%20to%20show%20distribution%20for%20each%20gene%20of%20interest-4.png)<!-- -->![](Analysis_files/figure-gfm/create%20graphs%20to%20show%20distribution%20for%20each%20gene%20of%20interest-5.png)<!-- -->![](Analysis_files/figure-gfm/create%20graphs%20to%20show%20distribution%20for%20each%20gene%20of%20interest-6.png)<!-- -->![](Analysis_files/figure-gfm/create%20graphs%20to%20show%20distribution%20for%20each%20gene%20of%20interest-7.png)<!-- -->![](Analysis_files/figure-gfm/create%20graphs%20to%20show%20distribution%20for%20each%20gene%20of%20interest-8.png)<!-- -->![](Analysis_files/figure-gfm/create%20graphs%20to%20show%20distribution%20for%20each%20gene%20of%20interest-9.png)<!-- -->![](Analysis_files/figure-gfm/create%20graphs%20to%20show%20distribution%20for%20each%20gene%20of%20interest-10.png)<!-- -->![](Analysis_files/figure-gfm/create%20graphs%20to%20show%20distribution%20for%20each%20gene%20of%20interest-11.png)<!-- -->![](Analysis_files/figure-gfm/create%20graphs%20to%20show%20distribution%20for%20each%20gene%20of%20interest-12.png)<!-- -->![](Analysis_files/figure-gfm/create%20graphs%20to%20show%20distribution%20for%20each%20gene%20of%20interest-13.png)<!-- -->
+
+``` r
 # How many times is the same sample and outlier in the dataset?
 outlier_table <- rev(stack(table(unlist(outliers)))) %>%
   arrange(desc(values))
 
 print(head(outlier_table))
-
-
-
 ```
 
+    ##          ind values
+    ## 1 GSM5836663      5
+    ## 2 GSM5836707      4
+    ## 3 GSM5836724      4
+    ## 4 GSM6038904      4
+    ## 5 GSM5836696      3
+    ## 6 GSM6038896      3
 
-```{r Gene Ontology enrichment, fig.width = 15, fig.height = 6}
+``` r
 # Select the list of unique genes from the HIV-1 dataframe which contained log2 fold change values
 unique_HIV1 <- HIV1[unique_genes,]%>%
   mutate(gene = unique_genes)
@@ -690,40 +856,61 @@ gse <- gseGO(geneList = gene_list,
 
 # Make plots
 enrichplot::dotplot(gse, split= ".sign", showCategory = 8) + facet_grid(.~.sign)
+```
 
+![](Analysis_files/figure-gfm/Gene%20Ontology%20enrichment-1.png)<!-- -->
+
+``` r
 gse2 <- pairwise_termsim(gse)
 
 emapplot(gse2, showCategory = 10)
-
-cnetplot(gse, categorySize="pvalue", showCategory = 5, foldChange=gene_list) 
-
-heatplot(gse, foldChange = gene_list, showCategory = 10, ) + scale_fill_gradient2(low = "red", , high = "blue", midpoint = 0)
-
-
 ```
-```{r Gene Ontology enrichment smaller plots for larger text, fig.width = 10, fig.height = 6}
 
+![](Analysis_files/figure-gfm/Gene%20Ontology%20enrichment-2.png)<!-- -->
 
+``` r
+cnetplot(gse, categorySize="pvalue", showCategory = 5, foldChange=gene_list) 
+```
+
+![](Analysis_files/figure-gfm/Gene%20Ontology%20enrichment-3.png)<!-- -->
+
+``` r
+heatplot(gse, foldChange = gene_list, showCategory = 10, ) + scale_fill_gradient2(low = "red", , high = "blue", midpoint = 0)
+```
+
+![](Analysis_files/figure-gfm/Gene%20Ontology%20enrichment-4.png)<!-- -->
+
+``` r
 # Make plots
-enrichplot::dotplot(gse, x= "Cluster", split= ".sign", showCategory = 8) + facet_grid(.~.sign)
+enrichplot::dotplot(gse, split= ".sign", showCategory = 8) + facet_grid(.~.sign)
+```
 
+![](Analysis_files/figure-gfm/Gene%20Ontology%20enrichment%20smaller%20plots%20for%20larger%20text-1.png)<!-- -->
+
+``` r
 gse2 <- pairwise_termsim(gse)
 
 emapplot(gse2, showCategory = 10)
-
-cnetplot(gse, categorySize="pvalue", showCategory = 5, foldChange=gene_list) 
-
-heatplot(gse, foldChange = gene_list, showCategory = 10, ) + scale_fill_gradient2(low = "red", , high = "blue", midpoint = 0)
-
-
 ```
 
-``` {r Making a gost plot gives ideas for further downstream analysis}
+![](Analysis_files/figure-gfm/Gene%20Ontology%20enrichment%20smaller%20plots%20for%20larger%20text-2.png)<!-- -->
 
+``` r
+cnetplot(gse, categorySize="pvalue", showCategory = 5, foldChange=gene_list) 
+```
+
+![](Analysis_files/figure-gfm/Gene%20Ontology%20enrichment%20smaller%20plots%20for%20larger%20text-3.png)<!-- -->
+
+``` r
+heatplot(gse, foldChange = gene_list, showCategory = 10, ) + scale_fill_gradient2(low = "red", , high = "blue", midpoint = 0)
+```
+
+![](Analysis_files/figure-gfm/Gene%20Ontology%20enrichment%20smaller%20plots%20for%20larger%20text-4.png)<!-- -->
+
+``` r
 # # Perform functional enrichment analysis on list this makes an HTML object
 # gost_info <- gost(query = unique_genes)
 #  
 # # This information can be used to enrich these genes for further pathway analysis
 # gost <- gostplot(gost_info)
-
 ```
